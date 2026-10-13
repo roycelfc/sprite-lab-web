@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sprite Lab — Probador de animaciones</title>
+<style>
+:root{color-scheme:dark;--bg:#0c0e13;--panel:#151923;--line:#2b3242;--text:#edf1fa;--muted:#a5afc3;--accent:#76a9ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#182033,var(--bg) 55%);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1200px;margin:auto;padding:20px}h1{font-size:clamp(24px,4vw,36px);margin:0 0 5px}p{color:var(--muted);margin-top:4px}
+.layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(300px,.7fr);gap:16px;margin-top:18px}
+.panel{background:rgba(21,25,35,.94);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}
+h2{font-size:17px;margin:0 0 12px}.stage{height:370px;border:1px solid #343d50;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;background-color:#202532;background-image:linear-gradient(45deg,#2a3040 25%,transparent 25%),linear-gradient(-45deg,#2a3040 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#2a3040 75%),linear-gradient(-45deg,transparent 75%,#2a3040 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0}
+#actor{width:160px;height:220px;background-image:url('sprites.png');background-repeat:no-repeat;background-size:auto auto;image-rendering:pixelated;transform-origin:center;filter:drop-shadow(0 5px 3px #0008)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}.controls{display:grid;grid-template-columns:repeat(3,54px);gap:6px;justify-content:center;margin:12px auto}.controls button{height:46px;font-size:18px}.controls .empty{visibility:hidden}
+button,label.file{background:#252d3d;border:1px solid #3b465c;color:var(--text);border-radius:9px;padding:9px 12px;cursor:pointer}button:hover,label.file:hover{border-color:var(--accent)}button.active{background:#284c80;border-color:#76a9ff}
+input,select{width:100%;background:#0e121a;color:var(--text);border:1px solid #343d50;border-radius:8px;padding:9px;font:inherit}
+.field{display:grid;grid-template-columns:1fr 105px;align-items:center;gap:10px;margin:9px 0}.field span{color:#d4dbea}.small{font-size:12px;color:var(--muted)}.settings{display:grid;grid-template-columns:1fr 1fr;gap:10px}.settings label{font-size:13px;color:var(--muted)}.settings input{margin-top:5px}
+#sheetWrap{margin-top:14px;max-height:440px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#222}.sheet{display:block;max-width:none;cursor:crosshair;touch-action:pan-x pan-y}
+.status{font-size:12px;color:var(--muted);margin-top:10px}.pill{display:inline-block;padding:3px 8px;background:#202b3d;border-radius:20px;color:#c7dcff;font-size:12px}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.stage{height:300px}main{padding:12px}}
+</style>
+</head>
+<body><main>
+<h1>Sprite Lab</h1>
+<p>Prueba el personaje, cambia de dirección y ajusta el recorte de cada fotograma. También puedes cargar otra hoja de sprites.</p>
+<div class="layout">
+<section class="panel">
+<h2>Vista previa <span class="pill" id="state">Pausado</span></h2>
+<div class="stage" id="stage"><div id="actor"></div></div>
+<div class="row">
+<button id="play">▶ Reproducir</button><button id="pause">Ⅱ Pausar</button><button id="step">⏭ Un fotograma</button>
+<label class="file">Cargar sprite<input id="file" type="file" accept="image/*" hidden></label>
+</div>
+<div class="controls" aria-label="Controles de dirección">
+<span class="empty"></span><button data-dir="up">↑</button><span class="empty"></span>
+<button data-dir="left">←</button><button data-dir="down">↓</button><button data-dir="right">→</button>
+</div>
+<div class="row"><button data-dir="up-left">↖</button><button data-dir="up-right">↗</button><button data-dir="down-left">↙</button><button data-dir="down-right">↘</button></div>
+<div class="row"><label style="flex:1">Animación
+<select id="mode"><option value="walk">Caminar</option><option value="run">Correr</option><option value="idle">Quieto</option></select></label>
+<label style="flex:1">Escala
+<select id="scale"><option value="1">1×</option><option value="1.5">1.5×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="4">4×</option></select></label></div>
+<div class="status">Teclas: WASD o flechas para cambiar dirección; espacio para reproducir/pausar.</div>
+</section>
+<section class="panel">
+<h2>Recorte y animación</h2>
+<p class="small">La hoja incluida tiene espacios irregulares entre sprites. Ajusta estos valores hasta que el recuadro encierre un personaje completo. Puedes seleccionar fotogramas directamente en la hoja para crear una animación incluso cuando están separados.</p>
+<div class="settings">
+<label>Ancho del fotograma (px)<input id="fw" type="number" min="1" value="96"></label>
+<label>Alto del fotograma (px)<input id="fh" type="number" min="1" value="150"></label>
+<label>Posición X inicial<input id="sx" type="number" min="0" value="0"></label>
+<label>Posición Y inicial<input id="sy" type="number" min="0" value="0"></label>
+<label>N.º de fotogramas<input id="frames" type="number" min="1" max="60" value="4"></label>
+<label>Velocidad (FPS)<input id="fps" type="number" min="1" max="30" value="8"></label>
+</div>
+<div class="row"><button id="apply">Aplicar recorte</button><button id="addFrame">＋ Añadir fotograma</button><button id="clearFrames">Vaciar secuencia</button><button id="reset">Restablecer</button></div>
+<div class="status" id="frameList">Secuencia inicial: 4 fotogramas. Pulsa “Añadir fotograma” y toca cada personaje en la hoja para crear tu propia secuencia.</div>
+<div class="status" id="info">Hoja: sprites.png</div>
+<h2 style="margin-top:22px">Hoja de sprites</h2>
+<p class="small">Pulsa en la hoja para establecer el punto inicial X/Y. Para mayor precisión, amplía la página con el zoom del navegador.</p>
+<div id="sheetWrap"><img class="sheet" id="sheet" src="sprites.png" alt="Hoja de sprites"></div>
+</section></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const actor=$('actor'),sheet=$('sheet'),stage=$('stage');
+let playing=false,frame=0,last=0,raf=0,src='sprites.png',direction='down',posX=0,posY=0,customFrames=[],addingFrame=false;
+const dirs={down:0,up:1,left:2,right:3,'up-left':4,'up-right':5,'down-left':6,'down-right':7};
+function n(id){return Math.max(0,Number($(id).value)||0)}
+function apply(){
+ const fw=Math.max(1,n('fw')),fh=Math.max(1,n('fh')),sx=n('sx'),sy=n('sy');
+ const current=customFrames.length?customFrames[frame%customFrames.length]:{x:sx+frame*fw,y:sy};
+ actor.style.width=fw+'px';actor.style.height=fh+'px';
+ actor.style.backgroundImage=`url("${src}")`;
+ actor.style.backgroundPosition=`-${current.x}px -${current.y}px`;
+ actor.style.backgroundSize='auto auto';
+ actor.style.transform=`translate(${posX}px, ${posY}px) scale(${n('scale')||2}) ${direction==='left'||direction==='up-left'||direction==='down-left'?'scaleX(-1)':''}`;
+ $('info').textContent=`Fotograma ${frame+1}/${customFrames.length||Math.max(1,n('frames'))} · recorte ${fw}×${fh} px · inicio (${current.x}, ${current.y})`;
+}
+function totalFrames(){return customFrames.length||Math.max(1,n('frames'))}
+function draw(t){if(!playing)return;const interval=1000/Math.max(1,n('fps'));if(t-last>=interval){frame=(frame+1)%totalFrames();last=t;apply()}raf=requestAnimationFrame(draw)}
+function play(){if(playing)return;playing=true;$('state').textContent='Reproduciendo';$('play').classList.add('active');raf=requestAnimationFrame(draw)}
+function pause(){playing=false;cancelAnimationFrame(raf);$('state').textContent='Pausado';$('play').classList.remove('active')}
+$('play').onclick=play;$('pause').onclick=pause;
+$('step').onclick=()=>{pause();frame=(frame+1)%totalFrames();apply()};
+$('addFrame').onclick=()=>{addingFrame=true;$('addFrame').classList.add('active');$('frameList').textContent='Modo selección activo: toca el centro de un personaje en la hoja para añadirlo a la secuencia.'};
+$('clearFrames').onclick=()=>{customFrames=[];frame=0;addingFrame=false;$('addFrame').classList.remove('active');$('frameList').textContent='Secuencia vacía: activa “Añadir fotograma” y selecciona sprites en la hoja.';apply()};
+$('apply').onclick=()=>{frame=0;apply()};
+$('reset').onclick=()=>{pause();posX=0;posY=0;direction='down';$('fw').value=96;$('fh').value=150;$('sx').value=0;$('sy').value=0;$('frames').value=4;$('fps').value=8;customFrames=[];addingFrame=false;$('addFrame').classList.remove('active');$('frameList').textContent='Secuencia inicial: 4 fotogramas.';frame=0;apply()};
+$('scale').onchange=apply;
+document.querySelectorAll('[data-dir]').forEach(b=>b.onclick=()=>{direction=b.dataset.dir;document.querySelectorAll('[data-dir]').forEach(x=>x.classList.remove('active'));b.classList.add('active');const step=22;if(direction.includes('left'))posX-=step;if(direction.includes('right'))posX+=step;if(direction.includes('up'))posY-=step;if(direction.includes('down'))posY+=step;posX=Math.max(-stage.clientWidth/2,Math.min(stage.clientWidth/2,posX));posY=Math.max(-stage.clientHeight/2,Math.min(stage.clientHeight/2,posY));apply();$('info').textContent='Movimiento: '+direction+' · para cambiar la vista del personaje, selecciona su fila en la hoja.'});
+sheet.onload=()=>{sheet.style.width=sheet.naturalWidth+'px';sheet.style.height=sheet.naturalHeight+'px';$('info').textContent=`Hoja cargada: ${sheet.naturalWidth} × ${sheet.naturalHeight} px`;apply()};
+sheet.onclick=e=>{const r=sheet.getBoundingClientRect();const x=Math.round((e.clientX-r.left)*(sheet.naturalWidth/r.width));const y=Math.round((e.clientY-r.top)*(sheet.naturalHeight/r.height));const fw=Math.max(1,n('fw')),fh=Math.max(1,n('fh'));const fx=Math.max(0,Math.min(sheet.naturalWidth-fw,x-Math.round(fw/2))),fy=Math.max(0,Math.min(sheet.naturalHeight-fh,y-Math.round(fh/2)));if(addingFrame){customFrames.push({x:fx,y:fy});frame=customFrames.length-1;$('frames').value=customFrames.length;$('frameList').textContent=`Secuencia personalizada: ${customFrames.length} fotograma(s). Sigue tocando sprites en orden.`;apply();return}$('sx').value=fx;$('sy').value=fy;frame=0;apply()};
+$('file').onchange=e=>{const f=e.target.files[0];if(!f)return;src=URL.createObjectURL(f);sheet.src=src;frame=0;customFrames=[];$('frameList').textContent='Nueva hoja cargada. Ajusta el tamaño y selecciona los fotogramas.';apply()};
+document.addEventListener('keydown',e=>{if(['INPUT','SELECT'].includes(document.activeElement.tagName))return;const map={ArrowUp:'up',w:'up',ArrowDown:'down',s:'down',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right'};if(map[e.key]){e.preventDefault();document.querySelector(`[data-dir="${map[e.key]}"]`)?.click()}if(e.code==='Space'){e.preventDefault();playing?pause():play()}});
+apply();
+</script></body></html>
